@@ -1,0 +1,53 @@
+# Security & Secrets Prevention (CRITICAL - DO NOT COMMIT SECRETS)
+client.keys
+*.key
+*.pem
+*.pfx
+*.crt
+*.cer
+*.p12
+*.csr
+*.jks
+
+# Credentials, Passwords & API Tokens
+.env
+.env.*
+secrets.yml
+secrets.json
+passwords.txt
+credentials.json
+*token*
+!*.md
+
+# Wazuh Server & Agent Artifacts
+wazuh-install-files.tar
+*.tar
+*.gz
+*.tgz
+*.zip
+*.7z
+*.rar
+*.iso
+*.ova
+*.vmdk
+*.qcow2
+
+# Raw Logs & Event Exports (May contain sensitive network IPs, hashes, usernames)
+*.log
+alerts.json
+archives.json
+ossec.log
+*.evtx
+*.pcap
+*.pcapng
+
+# OS & Editor Files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.bak
+*.tmp
+~*
