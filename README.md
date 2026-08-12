@@ -120,19 +120,25 @@ SOC Analyst
 
 # 3. Current Lab Architecture
 
-The current lab uses VMware networking.
+The current lab uses VMware networking (VMnet8 NAT interface).
+
+> [!IMPORTANT]
+> **Environment Note:** The Windows Endpoint is the **Physical Host OS (Outside the VM)**, running the Wazuh Windows Agent natively on Windows 10. The Wazuh Server (Manager, Indexer, Dashboard) is deployed inside an **Ubuntu Linux VM** running on VMware.
 
 ```mermaid
 graph TD
-    subgraph Host ["HOST WINDOWS (VMware Network: VMnet8 NAT 192.168.131.0/24)"]
-        WazuhVM["Wazuh Ubuntu VM<br/>IP: 192.168.131.144"]
-        WinEndpoint["Windows Endpoint<br/>IP: 192.168.131.1<br/>Agent: WINDOWS_MATN_SOC"]
+    subgraph PhysicalHost ["PHYSICAL HOST MACHINE (Host Windows OS - Outside VM)"]
+        WinEndpoint["Host Windows Endpoint<br/>IP: 192.168.131.1<br/>Agent: WINDOWS_MATN_SOC<br/>(Native Windows 10 + Sysmon)"]
+        
+        subgraph Hypervisor ["VMware Workstation / Player"]
+            WazuhVM["Wazuh Ubuntu VM<br/>IP: 192.168.131.144<br/>(Inside VM)"]
+        end
     end
 
-    WinEndpoint -- "Telemetry / Events (TCP 1514)" --> WazuhVM
-    WinEndpoint -- "Enrollment (TCP 1515)" --> WazuhVM
+    WinEndpoint -- "Agent Telemetry (TCP 1514)" --> WazuhVM
+    WinEndpoint -- "Agent Enrollment (TCP 1515)" --> WazuhVM
 
-    subgraph Pipeline ["Wazuh Pipeline"]
+    subgraph Pipeline ["Wazuh Pipeline (Inside Ubuntu VM)"]
         Manager["Wazuh Manager"]
         Indexer["Wazuh Indexer"]
         Dashboard["Wazuh Dashboard (HTTPS 443)"]
@@ -142,44 +148,47 @@ graph TD
         Manager --> Dashboard
     end
 
-    Dashboard --> Analyst(("SOC Analyst"))
+    Dashboard --> Analyst(("SOC Analyst<br/>(Accessed via Host Browser)"))
 ```
 
 ### Network Topology Text Representation
 
 ```text
-                         HOST WINDOWS
-                              │
-                         VMware Network
-                              │
-                    192.168.131.0/24
-                              │
-              ┌───────────────┴───────────────┐
-              │                               │
-              ▼                               ▼
-       Wazuh Ubuntu VM                  Windows Endpoint
-       192.168.131.144                  192.168.131.1
-              │                               │
-              │                         Wazuh Agent
-              │                         WINDOWS_MATN_SOC
-              │                               │
-              └───────────────┬───────────────┘
-                              │
-                         Wazuh Pipeline
-                              │
-                ┌─────────────┼─────────────┐
-                ▼             ▼             ▼
-             Manager       Indexer       Dashboard
+                  PHYSICAL HOST MACHINE (Host Windows OS)
+                  ┌────────────────────────────────────────────┐
+                  │  Host Windows Endpoint (Outside VM)        │
+                  │  IP: 192.168.131.1                          │
+                  │  Wazuh Agent: WINDOWS_MATN_SOC             │
+                  └─────────────────────┬──────────────────────┘
+                                        │
+                                 VMware VMnet8
+                               192.168.131.0/24
+                                        │
+                         ┌──────────────┴──────────────┐
+                         │   VMware Hypervisor         │
+                         │   ┌──────────────────────┐  │
+                         │   │ Wazuh Ubuntu VM      │  │
+                         │   │ (Inside VM)          │  │
+                         │   │ IP: 192.168.131.144  │  │
+                         │   └──────────┬───────────┘  │
+                         └──────────────┼──────────────┘
+                                        │
+                                  Wazuh Pipeline
+                                        │
+                         ┌──────────────┼──────────────┐
+                         ▼              ▼              ▼
+                      Manager        Indexer       Dashboard
 ```
 
 ---
 
 # 4. Current Environment
 
-## Wazuh Server
+## Wazuh Server (Inside Ubuntu VM)
 
 | Component           | Value              |
 | ------------------- | ------------------ |
+| Deployment Type     | Virtual Machine (VMware) |
 | OS                  | Ubuntu 24.04.4 LTS |
 | Wazuh Version       | 4.14.7             |
 | Server IP           | `192.168.131.144`  |
@@ -189,10 +198,11 @@ graph TD
 | Virtual Disk        | 40 GB              |
 | Root Filesystem     | ~38 GB             |
 
-## Windows Endpoint
+## Windows Endpoint (Physical Host - Outside VM)
 
 | Component       | Value                                |
 | --------------- | ------------------------------------ |
+| Deployment Type | Physical Host OS (Outside VM)        |
 | OS              | Windows 10 64-bit                    |
 | Wazuh Agent     | 4.14.7                               |
 | Agent ID        | `001`                                |
